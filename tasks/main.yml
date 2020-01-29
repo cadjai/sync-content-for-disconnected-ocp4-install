@@ -1,0 +1,78 @@
+---
+# tasks file for sync-content-for-disconnected-ocp4-install
+- name: Copy the Ca cert or registry self signed cert from bastion to the host
+  copy:
+    src: "{{ local_registry_ca }}"
+    dest: /etc/pki/ca-trust/source/anchors/registry-ca.crt
+    mode: 0644
+    group: root
+    owner: root
+  when:
+    - local_registry_ca is defined and local_registry_ca | length > 0
+  register: ca_copied
+
+- name: Update Ca DB store to trust downloaded CA from above
+  shell: update-ca-trust
+  when:
+    - ca_copied is defined 
+    - not ca_copied.failed | bool
+    - ca_copied.changed | bool 
+
+- name: Get Subject CN of Ca from certificate to verify that it is currently trusted by the host
+  shell: openssl x509 -subject -noout -in /etc/pki/ca-trust/source/anchors/registry-ca.crt | cut -d, -f7 | cut -d= -f2 | awk '{$1=$1};1'
+  register: registry_ca_subject
+
+- name: Install required packages for  OCI container runtime
+  yum:
+    name: "{{ oci_packages }}"
+    state: present
+  failed_when:
+    - packaged_installed is defined
+    - packaged_installed.results is defined
+    - not ('already installed' in packaged_installed.results)
+    - ('No package matching ' in packaged_installed.results)
+  register: packaged_installed
+
+- name: Generate Local Registry PullSecret Config
+  command: podman login -u {{ local_registry_username }} -p {{ local_registry_password }} --authfile {{ local_registry_pullsecret }} {{ local_registry_fqdn_port }} 
+  register: local_pullsecret_generated
+
+- name: Combine Local Registry Pull Secret with OCP related Registries Pull Secrets
+  shell: jq -c --argjson var "$(jq .auths {{ local_registry_pullsecret }})" '.auths += $var' {{ ocp_registries_pullsecret }} > {{ local_secret_json }}
+  when:
+    - local_pullsecret_generated is defined
+    - local_pullsecret_generated.rc == 0 
+  register: pullsecrets_merged
+
+- name: Mirror Images 
+  command: oc adm -a {{ local_secret_json }} release mirror --from=quay.io/{{ product_repo }}/{{ release_name }}:{{ ocp_release }} --to={{ local_registry_fqdn_port }}/{{ local_repository }} --to-release-image={{ local_registry_fqdn_port }}/{{ local_repository }}:{{ ocp_release }} 
+  register: images_mirrored
+
+- name: List Mirrored Image Tags
+  shell: curl -s -u {{ local_registry_username }} -p {{ local_registry_password }} https://{{local_registry_fqdn_port }}/v2/{{ local_repository }}/tags/list | jq '.tags'
+  register: mirrored_image_tags
+
+- name: Print List of tags from mirrored images
+  debug:
+    var: mirrored_image_tags.stdout_lines
+
+- name: Login to the local registry
+  command: podman login -u {{ local_registry_username }} -p {{ local_registry_password }} https://{{local_registry_fqdn_port }}
+  register: registry_login
+
+- name: Prepare Local Directory to store download Images
+  file:
+    path: "{{ local_images_store_dir }}"
+    state: directory
+    mode: '0755'
+  register: image_dir_created
+
+- name: Process Mirrored Images
+  shell: "podman pull {{local_registry_fqdn_port }}/{{ local_repository }}:'.'{{ item }}; podman tag {{local_registry_fqdn_port }}/{{ local_repository }}:'.'{{ item }} {{ local_repository }}:'.'{{ item }}; podman save -o {{ local_images_stored_dir }}/'.'{{ item }} {{ local_repository }}:'.'{{ item }}"
+  when:
+    - registry_login is defined and registry_login.rc == 0 and 'Login Succeeded!' in registry_login.stdout
+    - mirrored_image_tags is defined and mirrored_image_tags.stdout_lines is defined
+    - image_dir_created is defined and image_dir_created.rc == 0
+  with_items:
+    - "{{ mirrored_image_tags.stdout_lines }}"
+  register: mirrored_images_saved

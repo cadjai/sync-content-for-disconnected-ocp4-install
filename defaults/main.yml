@@ -1,0 +1,19 @@
+---
+# defaults file for sync-content-for-disconnected-ocp4-install
+ocp_release: 
+local_registry_fqdn_port:
+local_registry_ca: 
+local_registry_username: 
+local_registry_password:
+local_repository: 
+local_secret_json: 
+local_registry_pullsecret: 
+ocp_registries_pullsecret: 
+product_repo: 
+release_name: 
+oci_packages:
+  - podman
+  - httpd-tools
+  - buildah
+  - jsoup 
+local_images_store_dir: 
