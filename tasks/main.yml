@@ -45,7 +45,7 @@
   register: pullsecrets_merged
 
 - name: Mirror Images 
-  shell: "oc adm -a {{ local_secret_json }} release mirror --from=quay.io/{{ product_repo }}/{{ release_name }}:{{ ocp_release }} --to={{ local_registry_fqdn_port }}/{{ local_repository }} --to-release-image={{ local_registry_fqdn_port }}/{{ local_repository }}:{{ ocp_release }} | grep -A7 'imageContentSources:' "
+  shell: "oc adm -a {{ local_secret_json }} release mirror --from=quay.io/{{ product_repo }}/{{ release_name }}:{{ ocp_release }} --to={{ local_registry_fqdn_port }}/{{ local_repository }} --to-release-image={{ local_registry_fqdn_port }}/{{ local_repository }}:{{ ocp_release }} | grep -A7 'imageContentSources:' > {{ content_source_output }}"
   register: images_mirrored
 
 - name: List Mirrored Image Tags

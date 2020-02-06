@@ -9,6 +9,7 @@ local_repository:
 local_secret_json: 
 local_registry_pullsecret: 
 ocp_registries_pullsecret: 
+content_source_output:
 product_repo: 
 release_name: 
 oci_packages:
