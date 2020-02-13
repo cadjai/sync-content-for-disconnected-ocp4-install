@@ -38,7 +38,7 @@
       when:
         - local_secret_json is not defined or (local_secret_json is defined and local_secret_json == "")
     - name: Check {{ local_registry_pullsecret }} is set
-fail:
+      fail:
         msg: "The variable {{ local_registry_pullsecret }} is not defined or has null value "
       when:
         - local_registry_pullsecret is not defined or (local_registry_pullsecret is defined and local_registry_pullsecret == "")
@@ -180,7 +180,7 @@ fail:
       register: mirrored_images_saved
 
   when:
-    - registry_login is defined and registry_login.rc ==0
+    - registry_login is defined and registry_login.rc == 0
     - mirrored_image_tags is defined and mirrored_image_tags.stdout_lines is defined
     - image_dir_created is defined
     - local_images_store_dir in image_dir_created.path and 'directory' in image_dir_created.state
