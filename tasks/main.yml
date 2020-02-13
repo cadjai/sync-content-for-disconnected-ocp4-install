@@ -1,6 +1,79 @@
 ---
 # tasks file for sync-content-for-disconnected-ocp4-install
-- name: Copy the Ca cert or registry self signed cert from bastion to the host
+- name: Validate that all variables are set before running this role
+  block:
+    - name: Check {{ ocp_release }} is set
+      fail:
+        msg: "The variable {{ ocp_release }} is not defined or has null value "
+      when:
+        - ocp_release is not defined or (ocp_release is defined and ocp_release == "")
+    - name: Check {{  }} is set
+      fail:
+        msg: "The variable {{ local_registry_fqdn_port }} is not defined or has null value "
+      when:
+        - local_registry_fqdn_port is not defined or (local_registry_fqdn_port is defined and local_registry_fqdn_port == "")
+    - name: Check {{ local_registry_ca }} is set
+      fail:
+        msg: "The variable {{ local_registry_ca }} is not defined or has null value "
+      when:
+        - local_registry_ca is not defined or (local_registry_ca is defined and local_registry_ca == "")
+    - name: Check {{ local_registry_username }} is set
+      fail:
+        msg: "The variable {{ local_registry_username }} is not defined or has null value "
+      when:
+        - local_registry_username is not defined or (local_registry_username is defined and local_registry_username == "")
+    - name: Check {{ local_registry_password }} is set
+      fail:
+        msg: "The variable {{ local_registry_password }} is not defined or has null value "
+      when:
+        - local_registry_password is not defined or (local_registry_password is defined and local_registry_password == "")
+    - name: Check {{ local_repository }} is set
+      fail:
+        msg: "The variable {{ local_repository }} is not defined or has null value "
+      when:
+        - local_repository is not defined or (local_repository is defined and local_repository == "")
+    - name: Check {{ local_secret_json }} is set
+      fail:
+        msg: "The variable {{ local_secret_json }} is not defined or has null value "
+      when:
+        - local_secret_json is not defined or (local_secret_json is defined and local_secret_json == "")
+    - name: Check {{ local_registry_pullsecret }} is set
+fail:
+        msg: "The variable {{ local_registry_pullsecret }} is not defined or has null value "
+      when:
+        - local_registry_pullsecret is not defined or (local_registry_pullsecret is defined and local_registry_pullsecret == "")
+    - name: Check {{ ocp_registries_pullsecret }} is set
+      fail:
+        msg: "The variable {{ ocp_registries_pullsecret }} is not defined or has null value "
+      when:
+        - ocp_registries_pullsecret is not defined or (ocp_registries_pullsecret is defined and ocp_registries_pullsecret == "")
+    - name: Check {{ product_repo }} is set
+      fail:
+        msg: "The variable {{ product_repo }} is not defined or has null value "
+      when:
+        - product_repo is not defined or (product_repo is defined and product_repo == "")
+    - name: Check {{ local_images_store_dir }} is set
+      fail:
+        msg: "The variable {{ local_images_store_dir }} is not defined or has null value "
+      when:
+        - local_images_store_dir is not defined or (local_images_store_dir is defined and local_images_store_dir == "")
+
+- name: Download and Install the OC Client
+  block:
+    - name: Download the OC Client
+      shell: "wget -O /tmp/openshift-client-linux-{{ ocp_release }}.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ ocp_release }}/openshift-client-linux-{{ ocp_release }}.tar.gz"
+      register: oc_downloaded
+
+    - name: Install the OC Client
+      shell: "tar zxf /tmp/openshift-client-linux-{{ ocp_release }}.tar.gz -C /usr/local/sbin/ oc kubectl"
+      become: yes
+      when: oc_downloaded is defined and oc_downloaded.rc == 0
+      register: oc_installed
+
+- name: Set Bash Completion for the OC Client
+  shell: oc completion bash | sudo tee /etc/bash_completion.d/openshift > /dev/null
+
+- name: Copy the CA cert or registry self signed cert from bastion to the host
   copy:
     src: "{{ local_registry_ca }}"
     dest: /etc/pki/ca-trust/source/anchors/registry-ca.crt
@@ -68,11 +141,47 @@
   register: image_dir_created
 
 - name: Process Mirrored Images
-  shell: "podman pull {{local_registry_fqdn_port }}/{{ local_repository }}:'.'{{ item }}; podman tag {{local_registry_fqdn_port }}/{{ local_repository }}:'.'{{ item }} {{ local_repository }}:'.'{{ item }}; podman save -o {{ local_images_stored_dir }}/'.'{{ item }} {{ local_repository }}:'.'{{ item }}"
+  block:
+    - name: Pull Images to be  Mirrored
+      command: "podman pull {{local_registry_fqdn_port }}/{{ local_repository }}:{{ item }}"
+      with_items:
+      - "{{ image_tags.tags | list }}"
+      register: mirrored_images_pulled
+
+    - name: Print Mirrored Images output
+      debug:
+        var: mirrored_images_pulled
+
+    - name: Tag Images to be Mirrored
+      command: "podman tag {{local_registry_fqdn_port }}/{{ local_repository }}:{{ item }} {{ local_repository }}:{{ item }}"
+      when:
+        - mirrored_images_pulled is defined
+        - mirrored_images_pulled.changed is defined and mirrored_images_pulled.changed | bool
+        - mirrored_images_pulled.results is defined and mirrored_images_pulled.results | length > 0
+        - "'All items completed' in mirrored_images_pulled.msg"
+      with_items:
+      - "{{ image_tags.tags | list }}"
+      register: mirrored_images_tagged
+
+    - name: Print Pulled Images output
+      debug:
+        var: mirrored_images_pulled
+
+    - name: Save Images to be Mirrored
+      #command: "podman save -o {{ local_images_store_dir }}/{{ item }}.tar.gz {{ local_repository }}:{{ item }}"
+      command: "podman save --compress  -o {{ local_images_store_dir }}/{{ item }}.tar.gz {{ local_repository }}:{{ item }}"
+      when:
+        - mirrored_images_tagged is defined
+        - mirrored_images_tagged.changed is defined and mirrored_images_tagged.changed | bool
+        - mirrored_images_tagged.results is defined and mirrored_images_tagged.results | length > 0
+        - "'All items completed' in mirrored_images_tagged.msg"
+      with_items:
+      - "{{ image_tags.tags | list }}"
+      register: mirrored_images_saved
+
   when:
-    - registry_login is defined and registry_login.rc == 0 and 'Login Succeeded!' in registry_login.stdout
+    - registry_login is defined and registry_login.rc ==0
     - mirrored_image_tags is defined and mirrored_image_tags.stdout_lines is defined
-    - image_dir_created is defined and image_dir_created.rc == 0
-  with_items:
-    - "{{ mirrored_image_tags.stdout_lines }}"
-  register: mirrored_images_saved
+    - image_dir_created is defined
+    - local_images_store_dir in image_dir_created.path and 'directory' in image_dir_created.state
+
