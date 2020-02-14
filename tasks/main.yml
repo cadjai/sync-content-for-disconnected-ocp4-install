@@ -168,8 +168,7 @@
         var: mirrored_images_pulled
 
     - name: Save Images to be Mirrored
-      #command: "podman save -o {{ local_images_store_dir }}/{{ item }}.tar.gz {{ local_repository }}:{{ item }}"
-      command: "podman save --compress  -o {{ local_images_store_dir }}/{{ item }}.tar.gz {{ local_repository }}:{{ item }}"
+      shell: "podman save {{ local_repository }}:{{ item }} | gzip > {{ local_images_store_dir }}/{{ item }}.tar.gz"
       when:
         - mirrored_images_tagged is defined
         - mirrored_images_tagged.changed is defined and mirrored_images_tagged.changed | bool
