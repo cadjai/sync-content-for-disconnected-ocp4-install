@@ -1,0 +1,58 @@
+- name: Validate that all variables are set before running this role
+  block:
+    - name: Check {{ ocp_release }} is set
+      fail:
+        msg: "The variable {{ ocp_release }} is not defined or has null value "
+      when:
+        - ocp_release is not defined or (ocp_release is defined and ocp_release == "")
+    - name: Check {{  }} is set
+      fail:
+        msg: "The variable {{ mirror_registry_fqdn_port }} is not defined or has null value "
+      when:
+        - mirror_registry_fqdn_port is not defined or (mirror_registry_fqdn_port is defined and mirror_registry_fqdn_port == "")
+    - name: Check {{ mirror_registry_ca }} is set
+      fail:
+        msg: "The variable {{ mirror_registry_ca }} is not defined or has null value "
+      when:
+        - mirror_registry_ca is not defined or (mirror_registry_ca is defined and mirror_registry_ca == "")
+    - name: Check {{ mirror_registry_username }} is set
+      fail:
+        msg: "The variable {{ mirror_registry_username }} is not defined or has null value "
+      when:
+        - mirror_registry_username is not defined or (mirror_registry_username is defined and mirror_registry_username == "")
+    - name: Check {{ mirror_registry_password }} is set
+      fail:
+        msg: "The variable {{ mirror_registry_password }} is not defined or has null value "
+      when:
+        - mirror_registry_password is not defined or (mirror_registry_password is defined and mirror_registry_password == "")
+    - name: Check {{ local_repository }} is set
+      fail:
+        msg: "The variable {{ local_repository }} is not defined or has null value "
+      when:
+        - local_repository is not defined or (local_repository is defined and local_repository == "")
+    - name: Check {{ local_secret_json }} is set
+      fail:
+        msg: "The variable {{ local_secret_json }} is not defined or has null value "
+      when:
+        - local_secret_json is not defined or (local_secret_json is defined and local_secret_json == "")
+    - name: Check {{ mirror_registry_pullsecret }} is set
+      fail:
+        msg: "The variable {{ mirror_registry_pullsecret }} is not defined or has null value "
+      when:
+        - mirror_registry_pullsecret is not defined or (mirror_registry_pullsecret is defined and mirror_registry_pullsecret == "")
+    - name: Check {{ ocp_registries_pullsecret }} is set
+      fail:
+        msg: "The variable {{ ocp_registries_pullsecret }} is not defined or has null value "
+      when:
+        - ocp_registries_pullsecret is not defined or (ocp_registries_pullsecret is defined and ocp_registries_pullsecret == "")
+    - name: Check {{ product_repo }} is set
+      fail:
+        msg: "The variable {{ product_repo }} is not defined or has null value "
+      when:
+        - product_repo is not defined or (product_repo is defined and product_repo == "")
+    - name: Check {{ local_images_store_dir }} is set
+      fail:
+        msg: "The variable {{ local_images_store_dir }} is not defined or has null value "
+      when:
+        - local_images_store_dir is not defined or (local_images_store_dir is defined and local_images_store_dir == "")
+
