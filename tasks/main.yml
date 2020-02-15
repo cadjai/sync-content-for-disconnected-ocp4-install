@@ -146,7 +146,7 @@
       shell: "cat {{ local_images_store_dir }}/{{ mirror_registry_pullsecret | basename }} | tr -d '[\r\n\t]'"
       register: pullsecret_singleline
  
-    - name: Convert mirror registry pull secret json into a single line to be use to set auth config 
+    - name: Add mirror registry pull secret json into a install config 
       lineinfile:
         path: "{{ local_images_store_dir }}/install-config.yml.j2"
         regexp: "^pullSecret:"
