@@ -62,8 +62,20 @@
     - local_pullsecret_generated.rc == 0 
   register: pullsecrets_merged
 
+- name: Get the current OC CLI Path
+  command: "which oc"
+  become: false
+  register: oc_client_location
+
+- name: Set OC Binary path
+  set_fact:
+    oc_cli: "{{ oc_client_location.stdout }}"
+  when:
+    - oc_client_location is defined
+    - oc_client_location.stdout is defined and oc_client_location.stdout != ""
+
 - name: Mirror Images 
-  shell: "oc adm -a {{ local_secret_json }} release mirror --from=quay.io/{{ product_repo }}/{{ release_name }}:{{ ocp_release }} --to={{ mirror_registry_fqdn_port }}/{{ local_repository }} --to-release-image={{ mirror_registry_fqdn_port }}/{{ local_repository }}:{{ ocp_release }} | grep -A7 'imageContentSources:' > {{ content_source_output }}"
+  shell: "{{ oc_cli | default('oc', true) }} adm -a {{ local_secret_json }} release mirror --from=quay.io/{{ product_repo }}/{{ release_name }}:{{ ocp_release }} --to={{ local_registry_fqdn_port }}/{{ local_repository }} --to-release-image={{ local_registry_fqdn_port }}/{{ local_repository }}:{{ ocp_release }} | grep -A7 'imageContentSources:' > {{ content_source_output }}"
   register: images_mirrored
 
 - name: List Mirrored Image Tags
