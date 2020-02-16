@@ -17,7 +17,7 @@ oci_packages:
   - httpd-tools
   - buildah
   - jsoup 
-local_images_store_dir: 
+local_mirrored_contents_store_dir: 
 isogen_packages:
   - genisoimage
   - yum-utils

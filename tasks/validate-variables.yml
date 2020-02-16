@@ -50,9 +50,9 @@
         msg: "The variable {{ product_repo }} is not defined or has null value "
       when:
         - product_repo is not defined or (product_repo is defined and product_repo == "")
-    - name: Check {{ local_images_store_dir }} is set
+    - name: Check {{ local_mirrored_contents_store_dir }}/images is set
       fail:
-        msg: "The variable {{ local_images_store_dir }} is not defined or has null value "
+        msg: "The variable {{ local_mirrored_contents_store_dir }}/images is not defined or has null value "
       when:
         - local_images_store_dir is not defined or (local_images_store_dir is defined and local_images_store_dir == "")
 
