@@ -7,7 +7,7 @@
         - ocp_release is not defined or (ocp_release is defined and ocp_release == "")
     - name: Check {{  }} is set
       fail:
-        msg: "The variable {{ mirror_registry_fqdn_port }} is not defined or has null value "
+        msg: "The variable {{ mirror_registry_fqdn }}:{{ mirror_registry_port }} is not defined or has null value "
       when:
         - mirror_registry_fqdn_port is not defined or (mirror_registry_fqdn_port is defined and mirror_registry_fqdn_port == "")
     - name: Check {{ mirror_registry_ca }} is set

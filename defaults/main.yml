@@ -1,7 +1,8 @@
 ---
 # defaults file for sync-content-for-disconnected-ocp4-install
 ocp_release: 
-mirror_registry_fqdn_port:
+mirror_registry_fqdn:
+mirror_registry_port:
 mirror_registry_ca: 
 mirror_registry_username: 
 mirror_registry_password:
