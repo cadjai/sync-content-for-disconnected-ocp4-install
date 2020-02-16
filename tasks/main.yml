@@ -100,11 +100,11 @@
     - oc_client_location.stdout is defined and oc_client_location.stdout != ""
 
 - name: Mirror Images 
-  shell: "{{ oc_cli | default('oc', true) }} adm -a {{ local_secret_json }} release mirror --from=quay.io/{{ product_repo }}/{{ release_name }}:{{ ocp_release }} --to={{ local_registry_fqdn_port }}/{{ local_repository }} --to-release-image={{ local_registry_fqdn_port }}/{{ local_repository }}:{{ ocp_release }} | grep -A7 'imageContentSources:' > {{ content_source_output }}"
+  shell: "{{ oc_cli | default('oc', true) }} adm -a {{ local_secret_json }} release mirror --from=quay.io/{{ product_repo }}/{{ release_name }}:{{ ocp_release }} --to={{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ local_repository }} --to-release-image={{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ local_repository }}:{{ ocp_release }} | grep -A7 'imageContentSources:' > {{ content_source_output }}"
   register: images_mirrored
 
 - name: List Mirrored Image Tags
-  shell: curl -s -u {{ mirror_registry_username }} -p {{ mirror_registry_password }} https://{{mirror_registry_fqdn_port }}/v2/{{ local_repository }}/tags/list | jq '.tags'
+  shell: curl -s -u {{ mirror_registry_username }}:{{ mirror_registry_password }} https://{{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/v2/{{ local_repository }}/tags/list 
   register: mirrored_image_tags
 
 - name: Print List of tags from mirrored images
@@ -112,7 +112,7 @@
     var: mirrored_image_tags.stdout_lines
 
 - name: Login to the local registry
-  command: podman login -u {{ mirror_registry_username }} -p {{ mirror_registry_password }} https://{{mirror_registry_fqdn_port }}
+  command: podman login -u {{ mirror_registry_username }} -p {{ mirror_registry_password }} https://{{ mirror_registry_fqdn }}:{{ mirror_registry_port }}
   register: registry_login
 
 - name: Prepare Local Directories to store downloaded content
@@ -168,7 +168,7 @@
     - local_images_store_dir in image_dir_created.path and 'directory' in image_dir_created.state
   block:
     - name: Pull Images to be  Mirrored
-      command: "podman pull {{mirror_registry_fqdn_port }}/{{ local_repository }}:{{ item }}"
+      command: "podman pull {{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ local_repository }}:{{ item }}"
       with_items:
       - "{{ image_tags.tags | list }}"
       register: mirrored_images_pulled
@@ -178,7 +178,7 @@
         var: mirrored_images_pulled
 
     - name: Tag Images to be Mirrored
-      command: "podman tag {{mirror_registry_fqdn_port }}/{{ local_repository }}:{{ item }} {{ local_repository }}:{{ item }}"
+      command: "podman tag {{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ local_repository }}:{{ item }} {{ local_repository }}:{{ item }}"
       when:
         - mirrored_images_pulled is defined
         - mirrored_images_pulled.changed is defined and mirrored_images_pulled.changed | bool
