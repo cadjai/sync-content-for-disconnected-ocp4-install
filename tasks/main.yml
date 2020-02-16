@@ -6,14 +6,39 @@
 - name: Download and Install the OC Client
   block:
     - name: Download the OC Client
-      shell: "wget -O /tmp/openshift-client-linux-{{ ocp_release }}.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ ocp_release }}/openshift-client-linux-{{ ocp_release }}.tar.gz"
+      shell: "wget -O /tmp/openshift-client-linux-{{ ocp_client_release }}.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ ocp_client_release }}/openshift-client-linux-{{ ocp_client_release }}.tar.gz"
       register: oc_downloaded
 
     - name: Install the OC Client
-      shell: "tar zxf /tmp/openshift-client-linux-{{ ocp_release }}.tar.gz -C /usr/local/sbin/ oc kubectl"
+      #shell: "tar zxf /tmp/openshift-client-linux-{{ ocp_client_release }}.tar.gz -C /usr/local/sbin/ oc kubectl"
+      command: "tar zxvf /tmp/openshift-client-linux-{{ ocp_client_release }}.tar.gz -C /usr/bin"
       become: yes
       when: oc_downloaded is defined and oc_downloaded.rc == 0
       register: oc_installed
+
+    - name: Fix Permission for the OC client 
+      command: "chmod +x /usr/bin/oc"
+      become: yes
+      when: oc_installed is defined and oc_installed.rc == 0
+      register: oc_configured
+
+- name: Download and Install the OCP installer 
+  block:
+    - name: Download installer 
+      command: wget -O /tmp/openshift-install-linux-{{ ocp_client_release }}.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ ocp_client_release }}/openshift-install-linux-{{ ocp_client_release }}.tar.gz
+      register: oc_installer_downloaded
+
+    - name: Install the OC Installer 
+      command: "tar zxf /tmp/openshift-install-linux-{{ ocp_client_release }}.tar.gz -C /usr/bin"
+      become: yes
+      when: oc_installer_downloaded is defined and oc_installer_downloaded.rc == 0
+      register: oc_installer_installed
+
+    - name: Fix Permission for the OC Installer 
+      command: "chmod +x /usr/bin/openshift-install"
+      become: yes
+      when: oc_installer_installed is defined and oc_installer_installed.rc == 0
+      register: oc_installer_configured
 
 - name: Set Bash Completion for the OC Client
   shell: oc completion bash | sudo tee /etc/bash_completion.d/openshift > /dev/null
@@ -127,6 +152,13 @@
       mode: '0755'
     register: rpms_dir_created
 
+  - name: Prepare Local Directory to store operator manifest 
+    file:
+      path: "{{ local_mirrored_contents_store_dir }}/manifest"
+      state: directory
+      mode: '0755'
+    register: manifest_dir_created
+
 
 - name: Process Mirrored Images
   when:
@@ -201,7 +233,7 @@
       register: content_source_appended
 
       - name: Copy OC client to mirror content directory
-        command: cp /tmp/openshift-client-linux-{{ ocp_release }}.tar.gz {{ local_mirrored_contents_store_dir }}/pkgs/
+        command: cp /tmp/openshift-client-linux-{{ ocp_client_release }}.tar.gz {{ local_mirrored_contents_store_dir }}/pkgs/
         register: oc_client_copied
 
 - name: Create iso of image content if needed

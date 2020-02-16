@@ -1,18 +1,19 @@
 ---
 # defaults file for sync-content-for-disconnected-ocp4-install
-ocp_release: 
+ocp_release: "4.3.2-x86_64" 
+ocp_client_release: "4.3.2" 
 mirror_registry_fqdn:
 mirror_registry_port:
 mirror_registry_ca: 
 mirror_registry_username: 
 mirror_registry_password:
-local_repository: 
+local_repository: 'ocp4/openshift4'
 local_secret_json: 
 mirror_registry_pullsecret: 
 ocp_registries_pullsecret: 
 content_source_output:
-product_repo: 
-release_name: 
+product_repo: 'openshift-release-dev'
+release_name: ocp-release
 oci_packages:
   - podman
   - httpd-tools
@@ -23,3 +24,9 @@ isogen_packages:
   - genisoimage
   - yum-utils
   - createrepo
+catalog_namespaces:
+  - openshift-marketplace
+catalog_sources:
+  - certified-operators
+  - community-operators
+  - redhat-operators
