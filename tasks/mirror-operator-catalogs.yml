@@ -61,3 +61,67 @@
   with_items:
     - "{{ catalog_sources }}"
   register: operator_catalog_mirrored 
+
+- name: List Mirrored Image Tags
+  shell: curl -s -u {{ mirror_registry_username }}:{{ mirror_registry_password }} https://{{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/v2/{{ catalog_repository }}/tags/list
+  register: mirrored_operator_image_tags
+
+- name: Set output to a fact
+  set_fact:
+    opc_image_tags: "{{ mirrored_operator_image_tags.stdout }}"
+
+- name: Login to the local registry
+  command: podman login -u {{ mirror_registry_username }} -p {{ mirror_registry_password }} https://{{ mirror_registry_fqdn }}:{{ mirror_registry_port }}
+  register: registry_login
+
+- name: Prepare Local Directories to store downloaded content
+  block:
+  - name: Prepare Local Directory to store download contents
+    file:
+      path: "{{ local_mirrored_contents_store_dir }}/opc-images"
+      state: directory
+      mode: '0755'
+    register: opc_content_dir_created
+
+- name: Process Mirrored iCatalog Images
+  when:
+    - registry_login is defined and registry_login.rc == 0
+    - mirrored_operator_image_tags is defined and mirrored_operator_image_tags.stdout_lines is defined
+    - opc_content_dir_created is defined
+    - 'opc-images' in opc_content_dir_created.path and 'directory' in opc_content_dir_created.state
+  block:
+    - name: Pull Images to be  Mirrored
+      command: "podman pull {{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ catalog_repository }}:{{ item }}"
+      with_items:
+      - "{{ opc_image_tags.tags | list }}"
+      register: mirrored_opcimages_pulled
+
+    - name: Print Mirrored Images output
+      debug:
+        var: mirrored_opcimages_pulled
+
+    - name: Tag Images to be Mirrored
+      command: "podman tag {{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ catalog_repository }}:{{ item }} {{ catalog_repository }}:{{ item }}"
+      when:
+        - mirrored_opcimages_pulled is defined
+        - mirrored_opcimages_pulled.changed is defined and mirrored_opcimages_pulled.changed | bool
+        - mirrored_opcimages_pulled.results is defined and mirrored_opcimages_pulled.results | length > 0
+        - "'All items completed' in mirrored_opcimages_pulled.msg"
+      with_items:
+      - "{{ opc_image_tags.tags | list }}"
+      register: mirrored_opcimages_tagged
+
+    - name: Print Pulled Images output
+      debug:
+        var: mirrored_opcimages_tagged
+
+    - name: Save Images to be Mirrored
+      shell: "podman save {{ catalog_repository }}:{{ item }} | gzip > {{ local_mirrored_contents_store_dir }}/opc-images/{{ item }}.tar.gz"
+      when:
+        - mirrored_opcimages_tagged is defined
+        - mirrored_opcimages_tagged.changed is defined and mirrored_opcimages_tagged.changed | bool
+        - mirrored_opcimages_tagged.results is defined and mirrored_opcimages_tagged.results | length > 0
+        - "'All items completed' in mirrored_opcimages_tagged.msg"
+      with_items:
+      - "{{ opc_image_tags.tags | list }}"
+      register: mirrored_opcimages_saved
