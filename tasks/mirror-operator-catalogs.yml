@@ -20,7 +20,7 @@
       register: manifest_db_dir_created
 
 - name: Mirror Catalogs
-  command: "{{ oc_cli | default('oc', true) }} adm catalog build --auth-token={{ local_secret_json }} --appregistry-endpoint https://quay.io/cnr --appregistry-org {{ item }} --from='quay.io/operator-framework/operator-registry-server:latest' --to={{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ local_repository }}/{{ item }}:{{ ocp_release }} --manifest-dir={{ local_images_store_dir }}/manifests/{{ item }}/  --to-db={{ local_images_store_dir }}/manifests-db/{{ item }}"
+  command: "{{ oc_cli | default('oc', true) }} adm catalog build --auth-token={{ local_secret_json }} --appregistry-endpoint https://quay.io/cnr --appregistry-org {{ item }} --from='quay.io/operator-framework/operator-registry-server:latest' --to={{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ local_repository }}/{{ item }}:{{ ocp_release }} --manifest-dir={{ local_mirrored_contents_store_dir }}/manifests/{{ item }}/  --to-db={{ local_mirrored_contents_store_dir }}/manifests-db/{{ item }}"
   with_items:
     - {{ catalog_sources }}
   register: operator_catalog_mirrored 

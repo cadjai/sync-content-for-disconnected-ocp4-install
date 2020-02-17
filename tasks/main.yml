@@ -169,7 +169,7 @@
     - registry_login is defined and registry_login.rc == 0
     - mirrored_image_tags is defined and mirrored_image_tags.stdout_lines is defined
     - image_dir_created is defined
-    - local_images_store_dir in image_dir_created.path and 'directory' in image_dir_created.state
+    - local_mirrored_contents_store_dir in image_dir_created.path and 'directory' in image_dir_created.state
   block:
     - name: Pull Images to be  Mirrored
       command: "podman pull {{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ local_repository }}:{{ item }}"
