@@ -207,6 +207,9 @@
       - "{{ image_tags.tags | list }}"
       register: mirrored_images_saved
 
+- name: Import Operator Catalog mirror tasks
+  import_tasks: mirror-operator-catalogs.yml 
+
 - name: Copy Registry artifacts to the images directory 
   block:
     - name: Copy mirror registry pull secret file to local image store  
