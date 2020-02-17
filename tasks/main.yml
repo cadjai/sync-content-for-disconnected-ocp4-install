@@ -192,9 +192,9 @@
       - "{{ image_tags.tags | list }}"
       register: mirrored_images_tagged
 
-    - name: Print Pulled Images output
+    - name: Print Tagged Images output
       debug:
-        var: mirrored_images_pulled
+        var: mirrored_images_tagged
 
     - name: Save Images to be Mirrored
       shell: "podman save {{ local_repository }}:{{ item }} | gzip > {{ local_mirrored_contents_store_dir }}/images/{{ item }}.tar.gz"
