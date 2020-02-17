@@ -19,18 +19,18 @@
         - "{{ catalog_sources }}"
       register: manifest_db_dir_created
 
-    ###Adding this as a workaround for bug https://bugzilla.redhat.com/show_bug.cgi?id=1795272
+###Adding this as a workaround for bug https://bugzilla.redhat.com/show_bug.cgi?id=1795272
 - name: Workaround for bugzilla bug # 1795272
   block:
     - name: Prepare Local Directory to store operator manifest DBs
       file:
-        path: "{{ ansible_end.HOME }}/.docker"
+        path: "{{ ansible_env.HOME }}/.docker"
         state: directory
         mode: '0755'
       register: docker_config_dir_created
 
     - name: Copy Registry auth config into the .docker director
-      command: cp {{ mirror_registry_pullsecret }} {{ {{ ansible_end.HOME }}/.docker/config.json
+      command: cp {{ mirror_registry_pullsecret }} {{ ansible_env.HOME }}/.docker/config.json
       register: docker_config_created
 
 - name: Get the current OC CLI Path
