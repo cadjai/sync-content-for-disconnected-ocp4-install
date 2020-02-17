@@ -31,3 +31,5 @@ catalog_sources:
   - community-operators
   - redhat-operators
 catalog_db: bundles.db
+ansible_user:
+catalog_repository: 'ocp4/operators-catalog'

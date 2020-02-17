@@ -22,15 +22,26 @@
 ###Adding this as a workaround for bug https://bugzilla.redhat.com/show_bug.cgi?id=1795272
 - name: Workaround for bugzilla bug # 1795272
   block:
-    - name: Prepare Local Directory to store operator manifest DBs
+    - name: Get User home 
+      shell: "getent passwd {{ ansible_user }} | cut -d: -f6"
+      changed_when: false
+      register: user_home
+
+    - name: Prepare Local Directory to store registry config 
       file:
-        path: "{{ ansible_env.HOME }}/.docker"
+        path: "{{ item }}/.docker"
         state: directory
         mode: '0755'
+      with_items: 
+        - "{{ user_home.stdout }}"
+        - "{{ ansible_env.HOME }}"
       register: docker_config_dir_created
 
     - name: Copy Registry auth config into the .docker director
-      command: cp {{ mirror_registry_pullsecret }} {{ ansible_env.HOME }}/.docker/config.json
+      command: cp {{ mirror_registry_pullsecret }} {{ item }}/.docker/config.json
+      with_items: 
+        - "{{ user_home.stdout }}"
+        - "{{ ansible_env.HOME }}"
       register: docker_config_created
 
 - name: Get the current OC CLI Path
@@ -46,7 +57,7 @@
     - oc_client_location.stdout is defined and oc_client_location.stdout != ""
 
 - name: Mirror Catalogs
-  command: "{{ oc_cli | default('oc', true) }} adm catalog build --auth-token={{ mirror_registry_pullsecret }} --appregistry-endpoint='https://quay.io/cnr' --appregistry-org={{ item }} --from='quay.io/operator-framework/operator-registry-server:latest' --to={{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ local_repository }}/{{ item }}:{{ ocp_release }} --manifest-dir={{ local_mirrored_contents_store_dir }}/manifests/{{ item }}/  --to-db={{ local_mirrored_contents_store_dir }}/manifests-db/{{ item }}/{{ catalog_db }}"
+  command: "{{ oc_cli | default('oc', true) }} adm catalog build --auth-token={{ mirror_registry_pullsecret }} --appregistry-endpoint='https://quay.io/cnr' --appregistry-org={{ item }} --from='quay.io/operator-framework/operator-registry-server:latest' --to={{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ catalog_repository }}/{{ item }}:{{ ocp_release }} --manifest-dir={{ local_mirrored_contents_store_dir }}/manifests/{{ item }}/  --to-db={{ local_mirrored_contents_store_dir }}/manifests-db/{{ item }}/{{ catalog_db }}"
   with_items:
     - "{{ catalog_sources }}"
   register: operator_catalog_mirrored 
