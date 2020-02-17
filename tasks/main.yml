@@ -232,9 +232,9 @@
       shell: " cat {{ local_mirrored_contents_store_dir }}/config/{{ content_source_output | basename }} >> {{ local_mirrored_contents_store_dir }}/images/install-config.yml.j2"
       register: content_source_appended
 
-      - name: Copy OC client to mirror content directory
-        command: cp /tmp/openshift-client-linux-{{ ocp_client_release }}.tar.gz {{ local_mirrored_contents_store_dir }}/pkgs/
-        register: oc_client_copied
+    - name: Copy OC client to mirror content directory
+      command: cp /tmp/openshift-client-linux-{{ ocp_client_release }}.tar.gz {{ local_mirrored_contents_store_dir }}/pkgs/
+      register: oc_client_copied
 
 - name: Create iso of image content if needed
   when:
