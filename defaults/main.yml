@@ -30,3 +30,4 @@ catalog_sources:
   - certified-operators
   - community-operators
   - redhat-operators
+catalog_db: bundles.db
