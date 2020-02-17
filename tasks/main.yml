@@ -107,6 +107,10 @@
   shell: curl -s -u {{ mirror_registry_username }}:{{ mirror_registry_password }} https://{{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/v2/{{ local_repository }}/tags/list 
   register: mirrored_image_tags
 
+- name: Set output to a fact
+  set_fact:
+    image_tags: "{{ mirrored_image_tags.stdout }}"
+
 - name: Print List of tags from mirrored images
   debug:
     var: mirrored_image_tags.stdout_lines
@@ -154,7 +158,7 @@
 
   - name: Prepare Local Directory to store operator manifest 
     file:
-      path: "{{ local_mirrored_contents_store_dir }}/manifest"
+      path: "{{ local_mirrored_contents_store_dir }}/manifests"
       state: directory
       mode: '0755'
     register: manifest_dir_created
