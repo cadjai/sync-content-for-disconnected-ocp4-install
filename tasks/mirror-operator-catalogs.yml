@@ -7,7 +7,7 @@
         state: directory
         mode: '0755'
       with_items:
-        - {{ catalog_sources }}
+        - "{{ catalog_sources }}"
       register: manifest_dir_created
 
     - name: Prepare Local Directory to store operator manifest DBs
@@ -16,11 +16,23 @@
         state: directory
         mode: '0755'
       with_items:
-        - {{ catalog_sources }}
+        - "{{ catalog_sources }}"
       register: manifest_db_dir_created
+
+- name: Get the current OC CLI Path
+  command: "which oc"
+  become: false
+  register: oc_client_location
+
+- name: Set OC Binary path
+  set_fact:
+    oc_cli: "{{ oc_client_location.stdout }}"
+  when:
+    - oc_client_location is defined
+    - oc_client_location.stdout is defined and oc_client_location.stdout != ""
 
 - name: Mirror Catalogs
   command: "{{ oc_cli | default('oc', true) }} adm catalog build --auth-token={{ local_secret_json }} --appregistry-endpoint https://quay.io/cnr --appregistry-org {{ item }} --from='quay.io/operator-framework/operator-registry-server:latest' --to={{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ local_repository }}/{{ item }}:{{ ocp_release }} --manifest-dir={{ local_mirrored_contents_store_dir }}/manifests/{{ item }}/  --to-db={{ local_mirrored_contents_store_dir }}/manifests-db/{{ item }}"
   with_items:
-    - {{ catalog_sources }}
+    - "{{ catalog_sources }}"
   register: operator_catalog_mirrored 
