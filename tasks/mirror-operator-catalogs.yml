@@ -63,7 +63,9 @@
   register: operator_catalog_mirrored 
 
 - name: List Mirrored Image Tags
-  shell: curl -s -u {{ mirror_registry_username }}:{{ mirror_registry_password }} https://{{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/v2/{{ catalog_repository }}/tags/list
+  shell: curl -s -u {{ mirror_registry_username }}:{{ mirror_registry_password }} https://{{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/v2/{{ catalog_repository }}/{{ item }}/tags/list
+  with_items:
+    - "{{ catalog_sources }}"
   register: mirrored_operator_image_tags
 
 - name: Set output to a fact

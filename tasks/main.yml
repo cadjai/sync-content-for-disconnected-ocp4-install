@@ -209,6 +209,9 @@
 
 - name: Import Operator Catalog mirror tasks
   import_tasks: mirror-operator-catalogs.yml 
+  when:
+    - mirror_operator_catalog is defined 
+    - mirror_operator_catalog | bool
 
 - name: Copy Registry artifacts to the images directory 
   block:
