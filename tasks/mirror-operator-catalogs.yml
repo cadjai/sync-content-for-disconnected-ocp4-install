@@ -98,17 +98,6 @@
       - "{{ opc_image_tags | list }}"
       register: mirrored_opcimages_pulled
 
-    #- name: Tag Images to be Mirrored
-    #  command: "podman tag {{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ catalog_repository }}/{{ item['item'] }}:{{ item['stdout'] }} {{ catalog_repository }}/{{ item['item'] }}:{{ item['item'] }}"
-    #  when:
-    #    - mirrored_opcimages_pulled is defined
-    #    - mirrored_opcimages_pulled.changed is defined and mirrored_opcimages_pulled.changed | bool
-    #    - mirrored_opcimages_pulled.results is defined and mirrored_opcimages_pulled.results | length > 0
-    #    - "'All items completed' in mirrored_opcimages_pulled.msg"
-    #  with_items:
-    #  - "{{ opc_image_tags | list }}"
-    #  register: mirrored_opcimages_tagged
-
     - name: Save Images to be Mirrored
       shell: "podman save {{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ catalog_repository }}/{{ item['item'] }}:{{ item['stdout'] }} | gzip > {{ local_mirrored_contents_store_dir }}/opc-images/{{ item['item'] }}-{{ item['stdout'] }}.tar.gz"
       when:
