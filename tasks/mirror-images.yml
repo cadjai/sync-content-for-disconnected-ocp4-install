@@ -1,0 +1,119 @@
+---
+- name: List Mirrored Image Tags
+  shell: curl -s -u {{ mirror_registry_username }}:{{ mirror_registry_password }} https://{{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/v2/{{ local_repository }}/tags/list 
+  register: mirrored_image_tags
+
+- name: Set output to a fact
+  set_fact:
+    image_tags: "{{ mirrored_image_tags.stdout }}"
+
+- name: Print List of tags from mirrored images
+  debug:
+    var: image_tags 
+
+- name: Login to the local registry
+  command: podman login -u {{ mirror_registry_username }} -p {{ mirror_registry_password }} https://{{ mirror_registry_fqdn }}:{{ mirror_registry_port }}
+  register: registry_login
+
+- name: Prepare Local Directories to store downloaded content
+  block:
+  - name: Prepare Local Directory to store download contents 
+    file:
+      path: "{{ local_mirrored_contents_store_dir }}"
+      state: directory
+      mode: '0755'
+    register: content_dir_created
+
+  - name: Prepare Local Directory to store download Images
+    file:
+      path: "{{ local_mirrored_contents_store_dir }}/images"
+      state: directory
+      mode: '0755'
+    register: image_dir_created
+
+- name: Process Mirrored Images
+  when:
+    - registry_login is defined and registry_login.rc == 0
+    - mirrored_image_tags is defined and mirrored_image_tags.stdout_lines is defined
+    - image_dir_created is defined
+    - local_mirrored_contents_store_dir in image_dir_created.path and 'directory' in image_dir_created.state
+  block:
+    - name: Pull Images to be  Mirrored
+      command: "podman pull {{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ local_repository }}:{{ item }}"
+      with_items:
+      - "{{ image_tags.tags | list }}"
+      register: mirrored_images_pulled
+
+    - name: Print Mirrored Images output
+      debug:
+        var: mirrored_images_pulled
+
+    - name: Save Images to be Mirrored
+      shell: "podman save {{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ local_repository }}:{{ item }} | gzip > {{ local_mirrored_contents_store_dir }}/images/{{ item }}.tar.gz"
+      when:
+        - mirrored_images_pulled is defined
+        - mirrored_images_pulled.changed is defined and mirrored_images_pulled.changed | bool
+        - mirrored_images_pulled.results is defined and mirrored_images_pulled.results | length > 0
+        - "'All items completed' in mirrored_images_pulled.msg"
+      with_items:
+      - "{{ image_tags.tags | list }}"
+      register: mirrored_images_saved
+
+- name: Import Operator Catalog mirror tasks
+  import_tasks: mirror-operator-catalogs.yml 
+  when:
+    - mirror_operator_catalog is defined 
+    - mirror_operator_catalog | bool
+
+- name: Copy Registry artifacts to the images directory 
+  block:
+    - name: Copy mirror registry pull secret file to local image store  
+      command: "cp {{ mirror_registry_pullsecret }} {{ local_mirrored_contents_store_dir }}/config/{{ mirror_registry_pullsecret | basename }}"
+      register: mirror_registry_pullsecret_copied
+
+    - name: Copy mirror registry Content Source output file to local image store  
+      command: "cp {{ content_source_output }} {{ local_mirrored_contents_store_dir }}/config/{{ content_source_output | basename }}"
+      register: mirror_registry_contentsource_copied
+
+    - name: Copy the Install Config template to the local image store to be amended with the content source
+      command: "cp ../files/install-config.yml.j2 {{ local_mirrored_contents_store_dir }}/config/install-config.yml.j2"
+      register: install_config_copied
+
+    - name: Convert Mirror Registry pull secret json into a single line json to update install-config
+      shell: "cat {{ local_mirrored_contents_store_dir }}/config/{{ mirror_registry_pullsecret | basename }} | tr -d '[\r\n\t]'"
+      register: pullsecret_singleline
+ 
+    - name: Add mirror registry pull secret json into a install config 
+      lineinfile:
+        path: "{{ local_mirrored_contents_store_dir }}/config/install-config.yml.j2"
+        regexp: "^pullSecret:"
+        line: "pullSecret: {{ pullsecret_singleline.stdout }}" 
+      register: mirror_registry_contentsource_copied
+
+    - name: Append Content Source to Install Config 
+      shell: " cat {{ local_mirrored_contents_store_dir }}/config/{{ content_source_output | basename }} >> {{ local_mirrored_contents_store_dir }}/images/install-config.yml.j2"
+      register: content_source_appended
+
+    - name: Copy OC client to mirror content directory
+      command: cp /tmp/openshift-client-linux-{{ ocp_client_release }}.tar.gz {{ local_mirrored_contents_store_dir }}/pkgs/
+      register: oc_client_copied
+
+- name: Create iso of image content if needed
+  when:
+    - create_content_iso is defined
+    - create_content_iso | bool 
+  block:
+    - name: Ensure require packages are installed
+      yum:
+        name: "{{ isogen_packages }}"
+        state: present
+      failed_when:
+        - iso_packaged_installed is defined
+        - iso_packaged_installed.results is defined
+        - not ('already installed' in iso_packaged_installed.results)
+        - "'No package matching ' in iso_packaged_installed.results"
+      register: iso_packaged_installed 
+
+    - name: Create Iso of the image content
+      command: "genisoimage -output {{ local_mirrored_contents_store_dir }}/ocp4-install-content.iso -volid cidata -joliet -rock -input-charset utf-8 {{ local_mirrored_contents_store_dir }}/images "
+      register: image_iso_created
