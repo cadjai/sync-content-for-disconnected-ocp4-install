@@ -181,21 +181,6 @@
       debug:
         var: mirrored_images_pulled
 
-   # - name: Tag Images to be Mirrored
-   #   command: "podman tag {{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ local_repository }}:{{ item }} {{ local_repository }}:{{ item }}"
-   #   when:
-   #     - mirrored_images_pulled is defined
-   #     - mirrored_images_pulled.changed is defined and mirrored_images_pulled.changed | bool
-   #     - mirrored_images_pulled.results is defined and mirrored_images_pulled.results | length > 0
-   #     - "'All items completed' in mirrored_images_pulled.msg"
-   #   with_items:
-   #   - "{{ image_tags.tags | list }}"
-   #   register: mirrored_images_tagged
-
-   # - name: Print Tagged Images output
-   #   debug:
-   #     var: mirrored_images_tagged
-
     - name: Save Images to be Mirrored
       shell: "podman save {{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ local_repository }}:{{ item }} | gzip > {{ local_mirrored_contents_store_dir }}/images/{{ item }}.tar.gz"
       when:
