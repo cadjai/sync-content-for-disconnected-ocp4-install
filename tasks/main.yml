@@ -192,6 +192,30 @@
       - "{{ image_tags.tags | list }}"
       register: mirrored_images_saved
 
+- name: Mirror docker registry image
+  block:
+    - name: Pull docker registry image
+      command: "podman pull {{ registry_container_image }}" 
+      register: registry_image_pulled
+
+    - name: Set Docker registry repository fact
+      set_fact: 
+        registry_image_repo: "{{ registry_container_image.split('/')[1] }}"
+
+    - name: Set Docker registry Image Tag fact
+      set_fact: 
+        registry_image_tag: "{{ registry_container_image.split('/')[2] }}"
+
+    - name: Tag docker registry image
+      command: "podman tag {{ registry_container_image }} {{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{{ registry_image_repo }}/{{ registry_image_tag }}"
+      
+    - name: Save Registry Image
+      shell: "podman save {{ mirror_registry_fqdn }}:{{ mirror_registry_port }}/{ registry_image_repo }}/{{ registry_image_tag }} | gzip > {{ local_mirrored_contents_store_dir }}/images/{{ registry_image_tag.split(':')[0] }}.tar.gz"
+      when:
+        - registry_image_pulled is defined
+        - registry_image_pulled.changed is defined and registry_image_pulled.changed | bool
+      register: registry_image_saved
+
 - name: Import Operator Catalog mirror tasks
   import_tasks: mirror-operator-catalogs.yml 
   when:

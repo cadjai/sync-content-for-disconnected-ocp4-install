@@ -39,3 +39,4 @@ rpms_repo_packages:
   - yum-utils
   - createrepo
   - dnf
+  - docker-distribution
