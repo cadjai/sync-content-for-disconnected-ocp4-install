@@ -270,11 +270,6 @@
 
     - name: Download required packages being mirrored
       shell: "dnf download --downloadonly --destdir={{ local_mirrored_contents_store_dir }}/rpms/ {{ (oci_packages + oci_packages + isogen_packages + rpms_repo_packages) | list | join(' ') }} "
-      #yum:
-      #  name: "{{ oci_packages + oci_packages + isogen_packages + rpms_repo_packages }}"
-      #  download_dir: "{{ local_mirrored_contents_store_dir }}/rpms"
-      #  download_only: yes 
-      #  state: present
 
 - name: Create iso of image content if needed
   when:
