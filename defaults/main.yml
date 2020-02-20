@@ -40,3 +40,4 @@ rpms_repo_packages:
   - createrepo
   - dnf
   - docker-distribution
+  - sqlite
