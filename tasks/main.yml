@@ -228,8 +228,29 @@
       register: content_source_appended
 
     - name: Copy OC client to mirror content directory
-      command: cp /tmp/openshift-client-linux-{{ ocp_client_release }}.tar.gz {{ local_mirrored_contents_store_dir }}/pkgs/
+      command: cp /tmp/openshift-*-linux-{{ ocp_client_release }}.tar.gz {{ local_mirrored_contents_store_dir }}/pkgs/
       register: oc_client_copied
+
+- name: Mirror required rpms
+  block:
+    - name: Install Required packages
+      yum:
+        name: "{{ rpms_repo_packages }}"
+        state: present
+      failed_when:
+         - packaged_installed is defined
+         - packaged_installed.results is defined
+         - not ('already installed' in packaged_installed.results)
+         - ('No package matching' in packaged_installed.results)
+      register: rpms_repo_pkgs_installed
+
+    - name: Download required packages being mirrored
+      shell: "dnf download --downloadonly --destdir={{ local_mirrored_contents_store_dir }}/rpms/ {{ (oci_packages + oci_packages + isogen_packages + rpms_repo_packages) | list | join(' ') }} "
+      #yum:
+      #  name: "{{ oci_packages + oci_packages + isogen_packages + rpms_repo_packages }}"
+      #  download_dir: "{{ local_mirrored_contents_store_dir }}/rpms"
+      #  download_only: yes 
+      #  state: present
 
 - name: Create iso of image content if needed
   when:

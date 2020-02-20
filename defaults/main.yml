@@ -34,3 +34,8 @@ catalog_db: bundles.db
 ansible_user:
 catalog_repository: 'ocp4/operators-catalog'
 mirror_operator_catalog:
+rpms_repo_packages:
+  - yum-plugin-downloadonly
+  - yum-utils
+  - createrepo
+  - dnf
