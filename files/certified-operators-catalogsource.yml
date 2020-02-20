@@ -1,0 +1,33 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  creationTimestamp: "2020-02-16T21:47:47Z"
+  generation: 10
+  labels:
+    olm-visibility: hidden
+    openshift-marketplace: "true"
+    opsrc-datastore: "true"
+    opsrc-owner-name: certified-operators
+    opsrc-owner-namespace: openshift-marketplace
+    opsrc-provider: certified
+  name: certified-operators
+  namespace: openshift-marketplace
+  resourceVersion: "1262713"
+  selfLink: /apis/operators.coreos.com/v1alpha1/namespaces/openshift-marketplace/catalogsources/certified-operators
+  uid: 6e0e11f3-7217-427b-8505-d1f3df035260
+spec:
+  address: 172.30.135.201:50051
+  displayName: Certified Operators
+  icon:
+    base64data: ""
+    mediatype: ""
+  publisher: Red Hat
+  sourceType: grpc
+status:
+  connectionState:
+    address: 172.30.135.201:50051
+    lastConnect: "2020-02-20T02:58:50Z"
+    lastObservedState: READY
+  registryService:
+    createdAt: "2020-02-16T21:47:47Z"
+    protocol: grpc

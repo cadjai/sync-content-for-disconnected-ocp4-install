@@ -1,0 +1,33 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  creationTimestamp: "2020-02-16T21:47:48Z"
+  generation: 4
+  labels:
+    olm-visibility: hidden
+    openshift-marketplace: "true"
+    opsrc-datastore: "true"
+    opsrc-owner-name: community-operators
+    opsrc-owner-namespace: openshift-marketplace
+    opsrc-provider: community
+  name: community-operators
+  namespace: openshift-marketplace
+  resourceVersion: "1262723"
+  selfLink: /apis/operators.coreos.com/v1alpha1/namespaces/openshift-marketplace/catalogsources/community-operators
+  uid: 1ef997aa-c6a7-4fc5-a726-36f4f0008ee9
+spec:
+  address: 172.30.220.53:50051
+  displayName: Community Operators
+  icon:
+    base64data: ""
+    mediatype: ""
+  publisher: Red Hat
+  sourceType: grpc
+status:
+  connectionState:
+    address: 172.30.11.174:50051
+    lastConnect: "2020-02-20T02:58:51Z"
+    lastObservedState: READY
+  registryService:
+    createdAt: "2020-02-16T21:47:48Z"
+    protocol: grpc
